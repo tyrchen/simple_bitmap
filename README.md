@@ -121,3 +121,21 @@ def deps do
   ]
 end
 ```
+
+## Caveats
+
+If your bitmap size is > 10M and < 30M, please modify the benchmark script (change `max_index` to 10000000) and redo the benchmark. Please expect performance drop and see if the metrics are still good for your use case.
+
+If you want a bitmap size > 30M, as for now this solution doesn't work due to system limit:
+
+```elixir
+iex(1)> b = SimpleBitmap.new()
+%SimpleBitmap{data: 0}
+iex(2)> SimpleBitmap.set(b, 33000000); :ok
+:ok
+iex(3)> SimpleBitmap.set(b, 34000000); :ok
+** (SystemLimitError) a system limit has been reached
+    (simple_bitmap) lib/simple_bitmap.ex:154: SimpleBitmap.do_set/2
+```
+
+A simple solution/workaround to that is to put a list of integers in the `data` field of the bitmap.
