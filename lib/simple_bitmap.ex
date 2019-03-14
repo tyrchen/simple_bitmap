@@ -20,6 +20,7 @@ defmodule SimpleBitmap do
     [179, 38, 10, 5, 0, 0, 0, 0, 0, 0]
   """
   use Bitwise
+  require Logger
 
   @type t :: %__MODULE__{}
   defstruct data: 0
@@ -29,10 +30,53 @@ defmodule SimpleBitmap do
 
     iex> SimpleBitmap.new()
     %SimpleBitmap{data: 0}
+    iex> SimpleBitmap.new(1024)
+    %SimpleBitmap{data: 1024}
   """
-  @spec new() :: t()
-  def new do
-    %__MODULE__{}
+  @spec new(non_neg_integer()) :: t()
+  def new(data \\ 0), do: %__MODULE__{data: data}
+
+  @doc """
+  Load a bitmap from a file
+
+    iex> b = SimpleBitmap.new(1024)
+    %SimpleBitmap{data: 1024}
+    iex> b = SimpleBitmap.set(b, 9)
+    %SimpleBitmap{data: 1536}
+    iex> b = SimpleBitmap.set(b, 225)
+    %SimpleBitmap{
+      data: 53919893334301279589334030174039261347274288845081144962207220499968
+    }
+    iex> SimpleBitmap.save(b, "/tmp/simple_bitmap")
+    iex> SimpleBitmap.load("/tmp/simple_bitmap")
+    %SimpleBitmap{
+      data: 53919893334301279589334030174039261347274288845081144962207220499968
+    }
+  """
+  def load(filename) do
+    case File.read(filename) do
+      {:ok, bin} ->
+        bin |> :zlib.gunzip() |> to_bitmap() |> new()
+
+      {:error, error} ->
+        Logger.warn("Failed to open #{filename}. Error: #{inspect(error)}")
+        new(0)
+    end
+  end
+
+  @doc """
+  Save the bitmap into file
+    iex> b = SimpleBitmap.new(1024)
+    %SimpleBitmap{data: 1024}
+    iex> b = SimpleBitmap.set(b, 9)
+    %SimpleBitmap{data: 1536}
+    iex> SimpleBitmap.save(b, "/tmp/simple_bitmap")
+    :ok
+  """
+  @spec save(t(), binary()) :: :ok
+  def save(bitmap, filename) do
+    bin = bitmap |> to_binary() |> :zlib.gzip()
+    File.write!(filename, bin)
   end
 
   @doc """
@@ -81,7 +125,7 @@ defmodule SimpleBitmap do
   """
   @spec msb(t()) :: non_neg_integer()
   def msb(bitmap) do
-    <<first::size(8), rest::binary>> = :binary.encode_unsigned(bitmap.data)
+    <<first::size(8), rest::binary>> = to_binary(bitmap)
     size = byte_size(rest) * 8
     get_msb(first) + size
   end
@@ -116,7 +160,6 @@ defmodule SimpleBitmap do
     do_msb(do_unset(bitmap, pos), length - 1, [pos | result])
   end
 
-  @spec get_msb(non_neg_integer()) :: non_neg_integer()
   defp get_msb(i) do
     cond do
       (i &&& 1 <<< 8) !== 0 -> 8
@@ -131,4 +174,7 @@ defmodule SimpleBitmap do
       true -> 0
     end
   end
+
+  defp to_binary(bitmap), do: :binary.encode_unsigned(bitmap.data)
+  defp to_bitmap(bin), do: :binary.decode_unsigned(bin)
 end

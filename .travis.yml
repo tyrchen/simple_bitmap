@@ -1,0 +1,28 @@
+language: elixir
+dist: xenial
+elixir: 1.7.4
+otp_release: 21.1.1
+branches:
+  only:
+  - master
+install:
+- mix local.hex --force
+- mix local.rebar --force
+before_script: make travis-init
+script: make travis
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script: make travis-deploy
+    on:
+      branch: master
+  - provider: releases
+    skip_cleanup: true
+    api_key:
+      secure: k0hB4nZjWD2V4LrOUYBIcyusLV13Fh+tFvRzgeMJIbHax/y6FOaW0w0MrT66lBmQ7Pgy8jGP1D2FYS9t55dJ7BDFliskbPfqMtIA92/jFhCD+A2+/4Gdt9V4HGzn5RCb8l22qVckRVTdxI8XoX/6IyLm2D/gBLvKkfV4vmgeWKTz7NlTNTPf1VVYUXyOWgLK32GdTelo8sszswULHjkxzqxkXvH6J9PHIWRRRfgYj9dpcPzIQBFrzby2TwAyNwGTNICDICsXNrltVbMUjg3j9lXHhH1DvZdnK30ywt+IgxFp5eSVtzLuLiEArr6iNABbTDJwVWIPy79Xa1AeOkaZdL9CBpCb0hcEyBJmMT9xULbYZbnKYbjdo3VUlc5Ad73Bd0iLoe8O0xA3I2DhTDsljuGWOLRP9OVnQrvvHzbT8xs9R5UE0t0R3WecleqZk3tvSlfGVKk2h56ji35s7fOVno9p7TNzHZSR4x2KlKWZI5KSDGtoPSld1vpn6SdLdEv8keOKNVYGM0ScbJ4+Scyx9joB8SXwrsv/hEOIJXRh70H8T7vRKUvyeAmRRWviyefF6p9XBnsoQ50+9BLTBxk3leVlfgpFFI01dIpIPbp+WBy1Bb6m/Gc2AZmTtMv3O0des0WMdW8xE9gMj34cKtjM9yFSDWzMR3QHJaFgbYkjOeo=
+    on:
+      repo: tyrchen/simple_bitmap
+      branch: master
+env:
+  matrix:
+  - MIX_ENV=test
