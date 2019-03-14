@@ -10,7 +10,7 @@ m2 = SimpleBitmap.set(m, max_index - 1)
 bitmap_random =
   Enum.reduce(1..100, m, fn _, acc -> SimpleBitmap.set(acc, Enum.random(1..max_index)) end)
 
-bitmap_empty = SimpleBitmap.new()
+bitmap_empty = SimpleBitmap.set(m, max_index)
 bitmap_full = SimpleBitmap.new(m1.data ^^^ m2.data)
 SimpleBitmap.save(bitmap_full, "/tmp/bitmap_full_for_load")
 

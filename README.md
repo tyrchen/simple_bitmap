@@ -27,7 +27,7 @@ If you'd know more, just look into the test cases and the source code itself. Af
 
 ## Performance
 
-We use [benchee]() to do the performance benchmark. Here's the result for 1.0.0:
+We use [benchee](https://github.com/PragTob/benchee) to do the performance benchmark. The bitmap size is 1M bits. Here's the result for 1.0.0:
 
 ```bash
 $ make bench
@@ -63,18 +63,18 @@ Generated benchmarks/output/bitmap_unset_random_bits.html
 Opened report using open
 
 Name                        ips        average  deviation         median         99th %
-set random bits        151.77 K        6.59 μs   ±241.74%           5 μs          29 μs
-unset random bits       48.18 K       20.76 μs    ±62.58%          20 μs          56 μs
-load bitmap              3.08 K      324.54 μs    ±14.92%         307 μs      513.61 μs
-save bitmap              1.20 K      836.68 μs    ±12.09%         812 μs     1201.43 μs
-get msb list             0.71 K     1411.24 μs     ±9.06%        1387 μs     1864.72 μs
+set random bits         88.68 K       11.28 μs   ±196.30%           9 μs          38 μs
+unset random bits       44.62 K       22.41 μs   ±176.87%          21 μs          60 μs
+load bitmap              2.86 K      349.06 μs    ±17.69%         327 μs         553 μs
+save bitmap              1.05 K      950.09 μs    ±29.21%         872 μs     1765.44 μs
+get msb list             0.72 K     1391.21 μs    ±10.05%        1365 μs     1859.88 μs
 
 Comparison:
-set random bits        151.77 K
-unset random bits       48.18 K - 3.15x slower
-load bitmap              3.08 K - 49.26x slower
-save bitmap              1.20 K - 126.98x slower
-get msb list             0.71 K - 214.19x slower
+set random bits         88.68 K
+unset random bits       44.62 K - 1.99x slower
+load bitmap              2.86 K - 30.95x slower
+save bitmap              1.05 K - 84.25x slower
+get msb list             0.72 K - 123.37x slower
 Suite saved in external term format at benchmarks/benchee/bitmap.benchee
 Operating System: macOS
 CPU Information: Intel(R) Core(TM) i7-7820HQ CPU @ 2.90GHz
@@ -94,24 +94,25 @@ Estimated total run time: 0 ns
 
 
 Name                                ips        average  deviation         median         99th %
-set random bits (1.0.0)        151.77 K        6.59 μs   ±241.74%           5 μs          29 μs
-unset random bits (1.0.0)       48.18 K       20.76 μs    ±62.58%          20 μs          56 μs
-load bitmap (1.0.0)              3.08 K      324.54 μs    ±14.92%         307 μs      513.61 μs
-save bitmap (1.0.0)              1.20 K      836.68 μs    ±12.09%         812 μs     1201.43 μs
-get msb list (1.0.0)             0.71 K     1411.24 μs     ±9.06%        1387 μs     1864.72 μs
+set random bits (1.0.0)         88.68 K       11.28 μs   ±196.30%           9 μs          38 μs
+unset random bits (1.0.0)       44.62 K       22.41 μs   ±176.87%          21 μs          60 μs
+load bitmap (1.0.0)              2.86 K      349.06 μs    ±17.69%         327 μs         553 μs
+save bitmap (1.0.0)              1.05 K      950.09 μs    ±29.21%         872 μs     1765.44 μs
+get msb list (1.0.0)             0.72 K     1391.21 μs    ±10.05%        1365 μs     1859.88 μs
 
 Comparison:
-set random bits (1.0.0)        151.77 K
-unset random bits (1.0.0)       48.18 K - 3.15x slower
-load bitmap (1.0.0)              3.08 K - 49.26x slower
-save bitmap (1.0.0)              1.20 K - 126.98x slower
-get msb list (1.0.0)             0.71 K - 214.19x slower
+set random bits (1.0.0)         88.68 K
+unset random bits (1.0.0)       44.62 K - 1.99x slower
+load bitmap (1.0.0)              2.86 K - 30.95x slower
+save bitmap (1.0.0)              1.05 K - 84.25x slower
+get msb list (1.0.0)             0.72 K - 123.37x slower
 ```
+
+Benchmark code is in [benchmarks/bitmap.exs](./benchmarks/bitmap.exs).
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `simple_bitmap` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `simple_bitmap` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -120,7 +121,3 @@ def deps do
   ]
 end
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/simple_bitmap](https://hexdocs.pm/simple_bitmap).
