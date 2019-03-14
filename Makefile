@@ -11,7 +11,6 @@ precommit: pre-build build post-build test
 
 travis: precommit
 
-
 pre-build: dep
 	@echo "Running scripts before the build..."
 
@@ -41,6 +40,10 @@ run:
 dialyzer:
 	@echo "Running dialyzer..."
 	@mix dialyzer
+
+bench:
+	@echo "Benchmark the simple bitmap..."
+	@mix run benchmarks/bitmap.exs
 
 include .makefiles/*.mk
 

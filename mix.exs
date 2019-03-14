@@ -5,6 +5,8 @@ defmodule SimpleBitmap.MixProject do
   @version @top |> Path.join("version") |> File.read!() |> String.trim()
   @elixir_version @top |> Path.join(".elixir_version") |> File.read!() |> String.trim()
 
+  def version, do: @version
+
   def project do
     [
       app: :simple_bitmap,
@@ -36,6 +38,8 @@ defmodule SimpleBitmap.MixProject do
   defp deps do
     [
       # dev and test
+      {:benchee, "~> 0.14", only: :dev},
+      {:benchee_html, "~> 0.4", only: :dev},
       {:credo, "~> 1.0.0", only: [:dev, :test]},
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.19.0", only: [:dev, :test], runtime: false},
