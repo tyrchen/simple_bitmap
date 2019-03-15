@@ -10,6 +10,8 @@ m2 = SimpleBitmap.set(m, max_index - 1)
 bitmap_random =
   Enum.reduce(1..1000, m, fn _, acc -> SimpleBitmap.set(acc, Enum.random(1..max_index)) end)
 
+random_msb_list = SimpleBitmap.msb(bitmap_random, 100)
+
 bitmap_empty = SimpleBitmap.set(m, max_index)
 bitmap_full = SimpleBitmap.new(m1.data ^^^ m2.data)
 SimpleBitmap.save(bitmap_full, "/tmp/bitmap_full_for_load")
@@ -21,7 +23,12 @@ Benchee.run(
     "save bitmap" => fn -> SimpleBitmap.save(bitmap_full, "/tmp/bitmap_full") end,
     "load bitmap" => fn -> SimpleBitmap.load("/tmp/bitmap_full_for_load") end,
     "get msb list" => fn -> SimpleBitmap.msb(bitmap_random, 10) end,
-    "get msb list skip N" => fn -> SimpleBitmap.msb(bitmap_random, 10, Enum.random(1..500)) end,
+    "get msb list skip N" => fn ->
+      SimpleBitmap.msb(bitmap_random, 10, skip: Enum.random(1..500))
+    end,
+    "get msb list with random cursor" => fn ->
+      SimpleBitmap.msb(bitmap_random, 10, cursor: Enum.random(random_msb_list))
+    end,
     "population count" => fn -> SimpleBitmap.popcount(bitmap_random) end,
     "population count 1" => fn -> SimpleBitmap.popcount1(bitmap_random) end
   },
