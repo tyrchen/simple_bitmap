@@ -34,7 +34,7 @@ defmodule SimpleBitmap do
     %SimpleBitmap{data: 1024}
   """
   @spec new(non_neg_integer()) :: t()
-  def new(data \\ 0), do: %__MODULE__{data: data}
+  def new(data \\ 0), do: do_new(data)
 
   @doc """
   Load a bitmap from a file
@@ -56,7 +56,7 @@ defmodule SimpleBitmap do
   def load(filename) do
     case File.read(filename) do
       {:ok, bin} ->
-        bin |> :zlib.gunzip() |> to_bitmap() |> new()
+        bin |> :zlib.gunzip() |> to_bitmap()
 
       {:error, error} ->
         Logger.warn("Failed to open #{filename}. Error: #{inspect(error)}")
@@ -126,8 +126,8 @@ defmodule SimpleBitmap do
   @spec msb(t()) :: non_neg_integer()
   def msb(bitmap) do
     <<first::size(8), rest::binary>> = to_binary(bitmap)
-    size = byte_size(rest) * 8
-    get_msb(first) + size
+    size = byte_size(rest) <<< 3
+    get_msb(first, 0) + size
   end
 
   @doc """
@@ -144,37 +144,92 @@ defmodule SimpleBitmap do
     iex> b = SimpleBitmap.unset(b, 9)
     iex> SimpleBitmap.msb(b, 10)
     [9326887, 1753421, 33, 4, 1, 0, 0, 0, 0, 0]
+    iex> SimpleBitmap.msb(b, 10, 3)
+    [4, 1, 0, 0, 0, 0, 0, 0, 0, 0]
   """
-  @spec msb(t(), non_neg_integer()) :: [non_neg_integer()]
-  def msb(bitmap, length) do
-    do_msb(bitmap, length, [])
+  @spec msb(t(), non_neg_integer(), non_neg_integer()) :: [non_neg_integer()]
+  def msb(bitmap, length, skip \\ 0) do
+    do_msb(bitmap, length, skip, [])
   end
+
+  @doc """
+  Population count for bitmap.
+
+  Example:
+
+    iex> b = SimpleBitmap.new()
+    iex> b = SimpleBitmap.set(b, 1)
+    iex> b = SimpleBitmap.set(b, 4)
+    iex> b = SimpleBitmap.set(b, 9)
+    iex> b = SimpleBitmap.set(b, 33)
+    iex> SimpleBitmap.popcount(b)
+    4
+  """
+  @spec popcount(t()) :: non_neg_integer()
+  def popcount(bitmap), do: do_popcount(to_binary(bitmap), 0)
+
+  @doc """
+  Population count for bitmap, using algorithm from https://en.wikipedia.org/wiki/Hamming_weight. However, it is not as performant as `popcount()`.
+
+  ```C
+  //This is better when most bits in x are 0
+  //This is algorithm works the same for all data sizes.
+  //This algorithm uses 3 arithmetic operations and 1 comparison/branch per "1" bit in x.
+  int popcount64d(uint64_t x)
+  {
+      int count;
+      for (count=0; x; count++)
+          x &= x - 1;
+      return count;
+  }
+  ```
+  Example:
+
+    iex> b = SimpleBitmap.new()
+    iex> b = SimpleBitmap.set(b, 1)
+    iex> b = SimpleBitmap.set(b, 4)
+    iex> b = SimpleBitmap.set(b, 9)
+    iex> b = SimpleBitmap.set(b, 33)
+    iex> SimpleBitmap.popcount(b)
+    4
+  """
+  @spec popcount1(t()) :: non_neg_integer()
+  def popcount1(bitmap), do: do_popcount1(bitmap.data, 0)
 
   # private functions
+  defp do_popcount(<<>>, acc), do: acc
+
+  defp do_popcount(<<bit::integer-size(1), rest::bitstring>>, sum),
+    do: do_popcount(rest, sum + bit)
+
+  defp do_popcount1(0, r), do: r
+  defp do_popcount1(i, r), do: do_popcount1(i &&& i - 1, r + 1)
+
   defp do_set(bitmap, index), do: %__MODULE__{bitmap | data: bitmap.data ||| 1 <<< index}
   defp do_unset(bitmap, index), do: %__MODULE__{bitmap | data: bitmap.data &&& ~~~(1 <<< index)}
-  defp do_msb(_bitmap, 0, result), do: Enum.reverse(result)
 
-  defp do_msb(bitmap, length, result) do
+  defp do_msb(_bitmap, 0, _skip, result), do: Enum.reverse(result)
+
+  defp do_msb(bitmap, length, 0, result) do
     pos = msb(bitmap)
-    do_msb(do_unset(bitmap, pos), length - 1, [pos | result])
+    do_msb(do_unset(bitmap, pos), length - 1, 0, [pos | result])
   end
 
-  defp get_msb(i) do
-    cond do
-      (i &&& 1 <<< 8) !== 0 -> 8
-      (i &&& 1 <<< 7) !== 0 -> 7
-      (i &&& 1 <<< 6) !== 0 -> 6
-      (i &&& 1 <<< 5) !== 0 -> 5
-      (i &&& 1 <<< 4) !== 0 -> 4
-      (i &&& 1 <<< 3) !== 0 -> 3
-      (i &&& 1 <<< 2) !== 0 -> 2
-      (i &&& 1 <<< 1) !== 0 -> 1
-      (i &&& 1 <<< 0) !== 0 -> 0
-      true -> 0
-    end
+  defp do_msb(bitmap, length, skip, result) do
+    skipped = bitmap |> to_binary() |> do_skip(skip, 0)
+    size = 8 - (skipped |> :erlang.bit_size() |> rem(8))
+    skipped = <<0::size(size), skipped::bitstring>>
+    do_msb(to_bitmap(skipped), length, 0, result)
   end
+
+  defp do_skip(bin, n, acc) when n === acc, do: bin
+  defp do_skip(<<bit::integer-size(1), rest::bitstring>>, n, acc), do: do_skip(rest, n, acc + bit)
+
+  defp get_msb(0, 0), do: 0
+  defp get_msb(0, r), do: r - 1
+  defp get_msb(i, r), do: get_msb(i >>> 1, r + 1)
 
   defp to_binary(bitmap), do: :binary.encode_unsigned(bitmap.data)
-  defp to_bitmap(bin), do: :binary.decode_unsigned(bin)
+  defp to_bitmap(bin), do: bin |> :binary.decode_unsigned() |> do_new()
+  defp do_new(data), do: %__MODULE__{data: data}
 end
