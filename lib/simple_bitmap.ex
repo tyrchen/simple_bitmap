@@ -87,7 +87,7 @@ defmodule SimpleBitmap do
     %SimpleBitmap{data: 8}
   """
   @spec set(t(), non_neg_integer()) :: t()
-  def set(bitmap, index) when index > 0, do: do_set(bitmap, index)
+  def set(bitmap, index) when index >= 0, do: do_set(bitmap, index)
 
   @doc """
   Set the bit to 0 for given index.
@@ -99,7 +99,7 @@ defmodule SimpleBitmap do
     %SimpleBitmap{data: 4}
   """
   @spec unset(t(), non_neg_integer()) :: t()
-  def unset(bitmap, index) when index > 0, do: do_unset(bitmap, index)
+  def unset(bitmap, index) when index >= 0, do: do_unset(bitmap, index)
 
   @doc """
   Check if a bit is set to 1 for given index.
@@ -111,7 +111,7 @@ defmodule SimpleBitmap do
     true
   """
   @spec set?(t(), non_neg_integer()) :: boolean()
-  def set?(bitmap, index) when index > 0, do: (bitmap.data >>> index &&& 1) === 1
+  def set?(bitmap, index) when index >= 0, do: (bitmap.data >>> index &&& 1) === 1
 
   @doc """
   Get the index of the most significant bit.
@@ -144,12 +144,18 @@ defmodule SimpleBitmap do
     iex> b = SimpleBitmap.unset(b, 9)
     iex> SimpleBitmap.msb(b, 10)
     [9326887, 1753421, 33, 4, 1, 0, 0, 0, 0, 0]
-    iex> SimpleBitmap.msb(b, 10, 3)
+    iex> SimpleBitmap.msb(b, 10, skip: 3)
+    [4, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+    iex> SimpleBitmap.msb(b, 10, cursor: 33)
     [4, 1, 0, 0, 0, 0, 0, 0, 0, 0]
   """
-  @spec msb(t(), non_neg_integer(), non_neg_integer()) :: [non_neg_integer()]
-  def msb(bitmap, length, skip \\ 0) do
-    do_msb(bitmap, length, skip, [])
+  @spec msb(t(), non_neg_integer(), Keyword.t()) :: [non_neg_integer()]
+  def msb(bitmap, length, opts \\ []) do
+    cond do
+      opts[:skip] != nil -> do_msb(bitmap, length, opts[:skip], [])
+      opts[:cursor] != nil -> do_msb_cursor(bitmap, length, opts[:cursor], [])
+      true -> do_msb(bitmap, length, 0, [])
+    end
   end
 
   @doc """
@@ -220,6 +226,12 @@ defmodule SimpleBitmap do
     size = 8 - (skipped |> :erlang.bit_size() |> rem(8))
     skipped = <<0::size(size), skipped::bitstring>>
     do_msb(to_bitmap(skipped), length, 0, result)
+  end
+
+  defp do_msb_cursor(bitmap, length, cursor, result) do
+    cursor_map = do_new(0) |> do_set(cursor)
+    new_map = do_new(bitmap.data &&& cursor_map.data - 1)
+    do_msb(new_map, length, 0, result)
   end
 
   defp do_skip(bin, n, acc) when n === acc, do: bin

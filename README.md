@@ -21,7 +21,9 @@ iex> SimpleBitmap.msb(b)
 179
 iex> SimpleBitmap.msb(b, 10)
 [179, 38, 10, 5, 0, 0, 0, 0, 0, 0]
-iex> SimpleBitmap.msb(b, 10, 2)
+iex> SimpleBitmap.msb(b, 10, skip: 2)
+[10, 5, 0, 0, 0, 0, 0, 0, 0, 0]
+iex> SimpleBitmap.msb(b, 10, cursor: 38)
 [10, 5, 0, 0, 0, 0, 0, 0, 0, 0]
 iex> SimpleBitmap.popcount(b)
 4
@@ -49,11 +51,12 @@ time: 5 s
 memory time: 0 ns
 parallel: 1
 inputs: none specified
-Estimated total run time: 48 s
+Estimated total run time: 54 s
 
 
 Benchmarking get msb list...
 Benchmarking get msb list skip N...
+Benchmarking get msb list with random cursor...
 Benchmarking load bitmap...
 Benchmarking population count...
 Benchmarking population count 1...
@@ -64,6 +67,7 @@ Generated benchmarks/output/bitmap.html
 Generated benchmarks/output/bitmap_comparison.html
 Generated benchmarks/output/bitmap_get_msb_list.html
 Generated benchmarks/output/bitmap_get_msb_list_skip_n.html
+Generated benchmarks/output/bitmap_get_msb_list_with_random_cursor.html
 Generated benchmarks/output/bitmap_load_bitmap.html
 Generated benchmarks/output/bitmap_population_count.html
 Generated benchmarks/output/bitmap_population_count_1.html
@@ -71,25 +75,27 @@ Generated benchmarks/output/bitmap_save_bitmap.html
 Generated benchmarks/output/bitmap_set_random_bits.html
 Generated benchmarks/output/bitmap_unset_random_bits.html
 
-Name                          ips        average  deviation         median         99th %
-set random bits          104.89 K     0.00953 ms   ±109.89%     0.00799 ms      0.0300 ms
-unset random bits         48.05 K      0.0208 ms    ±61.20%      0.0200 ms      0.0570 ms
-load bitmap                2.91 K        0.34 ms    ±15.75%        0.34 ms        0.54 ms
-save bitmap                1.21 K        0.83 ms    ±12.19%        0.81 ms        1.12 ms
-get msb list               0.68 K        1.48 ms     ±9.02%        1.46 ms        1.99 ms
-get msb list skip N       0.194 K        5.14 ms    ±35.02%        5.13 ms        8.82 ms
-population count         0.0762 K       13.13 ms     ±9.77%       12.93 ms       17.52 ms
-population count 1       0.0526 K       19.02 ms     ±4.95%       18.86 ms       22.61 ms
+Name                                      ips        average  deviation         median         99th %
+set random bits                      94140.89      0.0106 ms   ±110.23%     0.00900 ms      0.0330 ms
+unset random bits                    46012.36      0.0217 ms    ±57.87%      0.0210 ms      0.0580 ms
+load bitmap                           2433.74        0.41 ms    ±27.38%        0.39 ms        0.72 ms
+save bitmap                           1132.84        0.88 ms    ±41.45%        0.84 ms        1.38 ms
+get msb list                           651.70        1.53 ms    ±14.33%        1.48 ms        2.52 ms
+get msb list with random cursor        511.99        1.95 ms    ±26.43%        1.84 ms        3.39 ms
+get msb list skip N                    189.12        5.29 ms    ±32.41%        5.35 ms        8.62 ms
+population count                        74.11       13.49 ms     ±5.06%       13.34 ms       16.19 ms
+population count 1                      50.11       19.96 ms     ±3.97%       19.80 ms       23.25 ms
 
 Comparison:
-set random bits          104.89 K
-unset random bits         48.05 K - 2.18x slower
-load bitmap                2.91 K - 36.09x slower
-save bitmap                1.21 K - 86.94x slower
-get msb list               0.68 K - 155.28x slower
-get msb list skip N       0.194 K - 539.59x slower
-population count         0.0762 K - 1377.02x slower
-population count 1       0.0526 K - 1994.62x slower
+set random bits                      94140.89
+unset random bits                    46012.36 - 2.05x slower
+load bitmap                           2433.74 - 38.68x slower
+save bitmap                           1132.84 - 83.10x slower
+get msb list                           651.70 - 144.46x slower
+get msb list with random cursor        511.99 - 183.87x slower
+get msb list skip N                    189.12 - 497.79x slower
+population count                        74.11 - 1270.31x slower
+population count 1                      50.11 - 1878.82x slower
 Suite saved in external term format at benchmarks/benchee/bitmap.benchee
 Operating System: macOS
 CPU Information: Intel(R) Core(TM) i7-7820HQ CPU @ 2.90GHz
@@ -108,25 +114,27 @@ Estimated total run time: 0 ns
 
 
 
-Name                                  ips        average  deviation         median         99th %
-set random bits (1.1.0)          104.89 K     0.00953 ms   ±109.89%     0.00799 ms      0.0300 ms
-unset random bits (1.1.0)         48.05 K      0.0208 ms    ±61.20%      0.0200 ms      0.0570 ms
-load bitmap (1.1.0)                2.91 K        0.34 ms    ±15.75%        0.34 ms        0.54 ms
-save bitmap (1.1.0)                1.21 K        0.83 ms    ±12.19%        0.81 ms        1.12 ms
-get msb list (1.1.0)               0.68 K        1.48 ms     ±9.02%        1.46 ms        1.99 ms
-get msb list skip N (1.1.0)       0.194 K        5.14 ms    ±35.02%        5.13 ms        8.82 ms
-population count (1.1.0)         0.0762 K       13.13 ms     ±9.77%       12.93 ms       17.52 ms
-population count 1 (1.1.0)       0.0526 K       19.02 ms     ±4.95%       18.86 ms       22.61 ms
+Name                                              ips        average  deviation         median         99th %
+set random bits (1.2.0)                      94140.89      0.0106 ms   ±110.23%     0.00900 ms      0.0330 ms
+unset random bits (1.2.0)                    46012.36      0.0217 ms    ±57.87%      0.0210 ms      0.0580 ms
+load bitmap (1.2.0)                           2433.74        0.41 ms    ±27.38%        0.39 ms        0.72 ms
+save bitmap (1.2.0)                           1132.84        0.88 ms    ±41.45%        0.84 ms        1.38 ms
+get msb list (1.2.0)                           651.70        1.53 ms    ±14.33%        1.48 ms        2.52 ms
+get msb list with random cursor (1.2.0)        511.99        1.95 ms    ±26.43%        1.84 ms        3.39 ms
+get msb list skip N (1.2.0)                    189.12        5.29 ms    ±32.41%        5.35 ms        8.62 ms
+population count (1.2.0)                        74.11       13.49 ms     ±5.06%       13.34 ms       16.19 ms
+population count 1 (1.2.0)                      50.11       19.96 ms     ±3.97%       19.80 ms       23.25 ms
 
 Comparison:
-set random bits (1.1.0)          104.89 K
-unset random bits (1.1.0)         48.05 K - 2.18x slower
-load bitmap (1.1.0)                2.91 K - 36.09x slower
-save bitmap (1.1.0)                1.21 K - 86.94x slower
-get msb list (1.1.0)               0.68 K - 155.28x slower
-get msb list skip N (1.1.0)       0.194 K - 539.59x slower
-population count (1.1.0)         0.0762 K - 1377.02x slower
-population count 1 (1.1.0)       0.0526 K - 1994.62x slower
+set random bits (1.2.0)                      94140.89
+unset random bits (1.2.0)                    46012.36 - 2.05x slower
+load bitmap (1.2.0)                           2433.74 - 38.68x slower
+save bitmap (1.2.0)                           1132.84 - 83.10x slower
+get msb list (1.2.0)                           651.70 - 144.46x slower
+get msb list with random cursor (1.2.0)        511.99 - 183.87x slower
+get msb list skip N (1.2.0)                    189.12 - 497.79x slower
+population count (1.2.0)                        74.11 - 1270.31x slower
+population count 1 (1.2.0)                      50.11 - 1878.82x slower
 ```
 
 Benchmark code is in [benchmarks/bitmap.exs](./benchmarks/bitmap.exs).
@@ -138,7 +146,7 @@ The package can be installed by adding `simple_bitmap` to your list of dependenc
 ```elixir
 def deps do
   [
-    {:simple_bitmap, "~> 1.0.0"}
+    {:simple_bitmap, "~> 1.3.0"}
   ]
 end
 ```
