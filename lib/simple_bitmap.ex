@@ -215,9 +215,9 @@ defmodule SimpleBitmap do
     iex> b = SimpleBitmap.unset(b, 9)
     iex> SimpleBitmap.lsb(b, 10)
     [1, 4, 33, 1753421, 9326887, 0, 0, 0, 0, 0]
-    iex> SimpleBitmap.msb(b, 10, skip: 3)
+    iex> SimpleBitmap.lsb(b, 10, skip: 3)
     [1753421, 9326887, 0, 0, 0, 0, 0, 0, 0, 0]
-    iex> SimpleBitmap.msb(b, 10, cursor: 4)
+    iex> SimpleBitmap.lsb(b, 10, cursor: 4)
     [33, 1753421, 9326887, 0, 0, 0, 0, 0, 0, 0]
   """
   @spec lsb(t(), non_neg_integer(), Keyword.t()) :: [non_neg_integer()]
