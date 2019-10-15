@@ -36,6 +36,19 @@ defmodule SimpleBitmap do
   @spec new(non_neg_integer()) :: t()
   def new(data \\ 0), do: do_new(data)
 
+  @doc """
+  Reverse a bitmap or an integer
+
+    iex> b = SimpleBitmap.new()
+    iex> b = SimpleBitmap.set(b, 1)
+    iex> b = SimpleBitmap.set(b, 4)
+    iex> b = SimpleBitmap.set(b, 9)
+    iex> b = SimpleBitmap.set(b, 33)
+    %SimpleBitmap{data: 8589935122}
+    iex> SimpleBitmap.reverse(b)
+    %SimpleBitmap{data: 310311387200}
+  """
+  @spec reverse(SimpleBitmap.t() | non_neg_integer()) :: SimpleBitmap.t()
   def reverse(%{data: data}), do: reverse(data)
 
   def reverse(num) do
@@ -202,7 +215,7 @@ defmodule SimpleBitmap do
   end
 
   @doc """
-  Get a list of most significant bits.
+  Get a list of least significant bits.
 
     iex> b = SimpleBitmap.new()
     iex> b = SimpleBitmap.set(b, 1)
