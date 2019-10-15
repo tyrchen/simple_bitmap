@@ -1,3 +1,7 @@
+## 1.4.0 (October 14, 2019)
+  - fix test
+  - support lsb
+
 ## 1.3.0 (March 15, 2019)
   - support cursor
 

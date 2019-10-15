@@ -37,6 +37,35 @@ defmodule SimpleBitmap do
   def new(data \\ 0), do: do_new(data)
 
   @doc """
+  Reverse a bitmap or an integer
+
+    iex> b = SimpleBitmap.new()
+    iex> b = SimpleBitmap.set(b, 1)
+    iex> b = SimpleBitmap.set(b, 4)
+    iex> b = SimpleBitmap.set(b, 9)
+    iex> b = SimpleBitmap.set(b, 33)
+    %SimpleBitmap{data: 8589935122}
+    iex> SimpleBitmap.reverse(b)
+    %SimpleBitmap{data: 310311387200}
+  """
+  @spec reverse(SimpleBitmap.t() | non_neg_integer()) :: SimpleBitmap.t()
+  def reverse(%{data: data}), do: reverse(data)
+
+  def reverse(num) do
+    count = byte_size(:binary.encode_unsigned(num)) * 8 - 1
+
+    result =
+      Enum.reduce(0..count, 0, fn i, acc ->
+        case (num &&& 1 <<< i) !== 0 do
+          true -> acc ||| 1 <<< (count - i)
+          _ -> acc
+        end
+      end)
+
+    new(result)
+  end
+
+  @doc """
   Load a bitmap from a file
 
     iex> b = SimpleBitmap.new(1024)
@@ -159,6 +188,61 @@ defmodule SimpleBitmap do
   end
 
   @doc """
+  Get the index of the most significant bit.
+
+    iex> b = SimpleBitmap.new()
+    iex> b = SimpleBitmap.set(b, 301)
+    iex> b = SimpleBitmap.set(b, 4)
+    iex> b = SimpleBitmap.set(b, 252)
+    iex> SimpleBitmap.lsb(b)
+    4
+  """
+  @spec lsb(t()) :: non_neg_integer()
+  def lsb(%{data: 0}), do: 0
+
+  def lsb(bitmap) do
+    arr = to_reverse_array(bitmap)
+
+    {size, first} =
+      Enum.reduce_while(arr, {0, 0}, fn item, {total, v} ->
+        case item == 0 do
+          true -> {:cont, {total + 1, v}}
+          _ -> {:halt, {total, item}}
+        end
+      end)
+
+    7 - get_msb(reverse(first).data, 0) + (size <<< 3)
+  end
+
+  @doc """
+  Get a list of least significant bits.
+
+    iex> b = SimpleBitmap.new()
+    iex> b = SimpleBitmap.set(b, 1)
+    iex> b = SimpleBitmap.set(b, 4)
+    iex> b = SimpleBitmap.set(b, 9)
+    iex> b = SimpleBitmap.set(b, 33)
+    iex> b = SimpleBitmap.set(b, 1753421)
+    iex> b = SimpleBitmap.set(b, 9326887)
+    iex> b = SimpleBitmap.unset(b, 32)
+    iex> b = SimpleBitmap.unset(b, 9)
+    iex> SimpleBitmap.lsb(b, 10)
+    [1, 4, 33, 1753421, 9326887, 0, 0, 0, 0, 0]
+    iex> SimpleBitmap.lsb(b, 10, skip: 3)
+    [1753421, 9326887, 0, 0, 0, 0, 0, 0, 0, 0]
+    iex> SimpleBitmap.lsb(b, 10, cursor: 4)
+    [33, 1753421, 9326887, 0, 0, 0, 0, 0, 0, 0]
+  """
+  @spec lsb(t(), non_neg_integer(), Keyword.t()) :: [non_neg_integer()]
+  def lsb(bitmap, length, opts \\ []) do
+    cond do
+      opts[:skip] != nil -> do_lsb(bitmap, length, opts[:skip], [])
+      opts[:cursor] != nil -> do_lsb_cursor(bitmap, length, opts[:cursor], [])
+      true -> do_lsb(bitmap, length, 0, [])
+    end
+  end
+
+  @doc """
   Population count for bitmap.
 
   Example:
@@ -234,7 +318,53 @@ defmodule SimpleBitmap do
     do_msb(new_map, length, 0, result)
   end
 
-  defp do_skip(bin, n, acc) when n === acc, do: bin
+  defp do_lsb(_bitmap, 0, _skip, result), do: Enum.reverse(result)
+
+  defp do_lsb(bitmap, length, 0, result) do
+    pos = lsb(bitmap)
+    do_lsb(do_unset(bitmap, pos), length - 1, 0, [pos | result])
+  end
+
+  defp do_lsb(bitmap, length, skip, result) do
+    len = (bitmap |> to_binary() |> byte_size()) * 8
+
+    data =
+      case skip >= len do
+        true ->
+          0
+
+        _ ->
+          initial = %{num: bitmap.data, i: 0, n: 0}
+
+          data =
+            Enum.reduce_while(1..len, initial, fn i, acc ->
+              v = acc.num >>> 1
+
+              acc =
+                case (acc.num &&& 1) === 1 do
+                  true -> %{acc | num: v, i: i, n: acc.n + 1}
+                  _ -> %{acc | num: v, i: i, n: acc.n}
+                end
+
+              case acc.n === skip do
+                true -> {:halt, acc}
+                _ -> {:cont, acc}
+              end
+            end)
+
+          data.num <<< data.i
+      end
+
+    do_lsb(new(data), length, 0, result)
+  end
+
+  defp do_lsb_cursor(bitmap, length, cursor, result) do
+    new_map = do_new(bitmap.data >>> (cursor + 1) <<< (cursor + 1))
+    do_lsb(new_map, length, 0, result)
+  end
+
+  defp do_skip(<<>>, _n, _acc), do: <<>>
+  defp do_skip(bin, n, acc) when n == acc, do: bin
   defp do_skip(<<bit::integer-size(1), rest::bitstring>>, n, acc), do: do_skip(rest, n, acc + bit)
 
   defp get_msb(0, 0), do: 0
@@ -242,6 +372,12 @@ defmodule SimpleBitmap do
   defp get_msb(i, r), do: get_msb(i >>> 1, r + 1)
 
   defp to_binary(bitmap), do: :binary.encode_unsigned(bitmap.data)
+
   defp to_bitmap(bin), do: bin |> :binary.decode_unsigned() |> do_new()
   defp do_new(data), do: %__MODULE__{data: data}
+
+  defp to_reverse_array(%{data: data}), do: to_reverse_array(data)
+
+  defp to_reverse_array(data),
+    do: data |> :binary.encode_unsigned() |> :binary.bin_to_list() |> Enum.reverse()
 end
